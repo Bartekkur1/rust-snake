@@ -18,8 +18,8 @@ impl Position {
     pub fn random() -> Self {
         let mut rng = rand::thread_rng();
         Self {
-            x: rng.gen_range(0..=MAP_SIZE_X),
-            y: rng.gen_range(0..=MAP_SIZE_Y),
+            x: Position::random_even(),
+            y: rng.gen_range(0..MAP_SIZE_Y),
         }
     }
 
@@ -29,6 +29,19 @@ impl Position {
 
     pub fn eq_val(a: &Position, x: i32, y: i32) -> bool {
         a.x == x && a.y == y
+    }
+
+    fn random_even() -> i32 {
+        let mut rng = rand::thread_rng();
+        let mut num = rng.gen_range(0..MAP_SIZE_X);
+        while num % 2 != 0 {
+            num = rng.gen_range(0..MAP_SIZE_X);
+        }
+        num
+    }
+
+    pub fn clone(&self) -> Self {
+        Self { x: self.x, y: self.y }
     }
 }
 
@@ -41,6 +54,47 @@ pub struct Entity {
 pub struct Player {
     pub entity: Entity,
     pub direction: Direction,
+    pub tail: Vec<Entity>,
+}
+
+impl Player {
+    pub fn move_player(&mut self) {
+        let mut last = self.entity.position.clone();
+        match self.direction {
+            Direction::Up => {
+                self.entity.position.y -= 1;
+            }
+            Direction::Down => {
+                self.entity.position.y += 1;
+            }
+            Direction::Left => {
+                self.entity.position.x -= 2;
+            }
+            Direction::Right => {
+                self.entity.position.x += 2;
+            }
+        }
+        if !self.tail.is_empty() {
+            for i in 0..self.tail.len() {
+                let temp = self.tail[i].position.clone();
+                self.tail[i].position = last.clone();
+                last.x = temp.x;
+                last.y = temp.y;
+            }
+        }
+    }
+
+    pub fn grow_tail(&mut self) {
+        if self.tail.is_empty() {
+            self.tail.push(Entity::new(Position::new(-1, -1), self.entity.color));
+            return;
+        } else {
+            let last = self.tail.last().unwrap();
+            self.tail.push(
+                Entity::new(Position::new(last.position.x, last.position.y), self.entity.color)
+            );
+        }
+    }
 }
 
 impl Entity {
