@@ -10,6 +10,18 @@ pub struct Position {
     pub y: i32,
 }
 
+impl PartialEq for Position {
+    fn eq(&self, other: &Self) -> bool {
+        self.x == other.x && self.y == other.y
+    }
+}
+
+impl PartialEq<(i32, i32)> for Position {
+    fn eq(&self, other: &(i32, i32)) -> bool {
+        self.x == other.0 && self.y == other.1
+    }
+}
+
 impl Position {
     pub fn new(x: i32, y: i32) -> Self {
         Self { x, y }
@@ -21,14 +33,6 @@ impl Position {
             x: Position::random_even(),
             y: rng.gen_range(0..MAP_SIZE_Y),
         }
-    }
-
-    pub fn eq(a: &Position, b: &Position) -> bool {
-        a.x == b.x && a.y == b.y
-    }
-
-    pub fn eq_val(a: &Position, x: i32, y: i32) -> bool {
-        a.x == x && a.y == y
     }
 
     fn random_even() -> i32 {
@@ -109,6 +113,18 @@ pub enum Direction {
     Down,
     Left,
     Right,
+}
+
+impl PartialEq for Direction {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Direction::Up, Direction::Up) => true,
+            (Direction::Down, Direction::Down) => true,
+            (Direction::Left, Direction::Left) => true,
+            (Direction::Right, Direction::Right) => true,
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Display for Direction {

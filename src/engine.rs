@@ -3,7 +3,7 @@ use std::{ io::{ stdout, Write }, thread, time::Duration };
 use device_query::{ DeviceQuery, DeviceState, Keycode };
 use termion::color::{ self, Fg, Rgb };
 use crate::{
-    entity::{ self, Entity, Player, Position },
+    entity::{ self, Direction, Entity, Player, Position },
     FOOD_BLOCK,
     MAP_SIZE_X,
     MAP_SIZE_Y,
@@ -46,8 +46,8 @@ impl Engine {
     pub fn spawn_food(&mut self) {
         let mut food_position = Position::random();
         while
-            Position::eq(&self.player.entity.position, &food_position) ||
-            self.player.tail.iter().any(|entity| Position::eq(&entity.position, &food_position))
+            self.player.entity.position == food_position ||
+            self.player.tail.iter().any(|entity| entity.position == food_position)
         {
             food_position = Position::random();
         }
@@ -63,13 +63,11 @@ impl Engine {
         println!("Points: {}", self.points);
         for y in 0..MAP_SIZE_Y {
             for x in 0..MAP_SIZE_X {
-                if Position::eq_val(&self.food.position, x, y) {
+                if self.food.position == (x, y) {
                     print!("{}{}", self.food.color, FOOD_BLOCK);
-                } else if Position::eq(&self.player.entity.position, &Position::new(x, y)) {
+                } else if self.player.entity.position == (x, y) {
                     print!("{}{}", PLAYER_COLOR, PLAYER_BLOCK);
-                } else if
-                    self.player.tail.iter().any(|entity| Position::eq_val(&entity.position, x, y))
-                {
+                } else if self.player.tail.iter().any(|entity| entity.position == (x, y)) {
                     print!("{}{}", PLAYER_COLOR, PLAYER_BLOCK);
                 } else {
                     print!("{}{}", color::Fg(color::Black), '#');
@@ -94,7 +92,7 @@ impl Engine {
             return;
         }
 
-        if Position::eq(&self.player.entity.position, &self.food.position) {
+        if &self.player.entity.position == &self.food.position {
             self.points += 1;
             self.spawn_food();
             self.player.grow_tail();
@@ -102,9 +100,7 @@ impl Engine {
     }
 
     fn check_tail_collision(&self) -> bool {
-        self.player.tail
-            .iter()
-            .any(|entity| Position::eq(&entity.position, &self.player.entity.position))
+        self.player.tail.iter().any(|entity| &entity.position == &self.player.entity.position)
     }
 
     fn handle_input(&mut self, device_state: &DeviceState) {
@@ -112,24 +108,15 @@ impl Engine {
         if keys.len() == 0 {
             return;
         }
-        // println!("{:?}", keys);
-        if keys.contains(&Keycode::Up) && !matches!(self.player.direction, entity::Direction::Down) {
-            self.player.direction = entity::Direction::Up;
-        } else if
-            keys.contains(&Keycode::Down) &&
-            !matches!(self.player.direction, entity::Direction::Up)
-        {
-            self.player.direction = entity::Direction::Down;
-        } else if
-            keys.contains(&Keycode::Left) &&
-            !matches!(self.player.direction, entity::Direction::Right)
-        {
-            self.player.direction = entity::Direction::Left;
-        } else if
-            keys.contains(&Keycode::Right) &&
-            !matches!(self.player.direction, entity::Direction::Left)
-        {
-            self.player.direction = entity::Direction::Right;
+
+        if keys.contains(&Keycode::Up) && self.player.direction != Direction::Down {
+            self.player.direction = Direction::Up;
+        } else if keys.contains(&Keycode::Down) && self.player.direction != Direction::Up {
+            self.player.direction = Direction::Down;
+        } else if keys.contains(&Keycode::Left) && self.player.direction != Direction::Right {
+            self.player.direction = Direction::Left;
+        } else if keys.contains(&Keycode::Right) && self.player.direction != Direction::Left {
+            self.player.direction = Direction::Right;
         } else if keys.contains(&Keycode::Escape) {
             self.running = false;
         }
